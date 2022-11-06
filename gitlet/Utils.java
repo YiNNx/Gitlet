@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.Formatter;
 import java.util.List;
 
+import static java.lang.System.exit;
+
 
 /** Assorted utilities.
  *
@@ -132,6 +134,8 @@ class Utils {
             }
             str.close();
         } catch (IOException | ClassCastException excp) {
+            System.out.println(excp.getMessage());
+            System.out.println(excp.getCause());
             throw new IllegalArgumentException(excp.getMessage());
         }
     }
@@ -151,6 +155,8 @@ class Utils {
             throw new IllegalArgumentException(excp.getMessage());
         }
     }
+
+
 
     /** Write OBJ to FILE. */
     static void writeObject(File file, Serializable obj) {
@@ -191,14 +197,14 @@ class Utils {
     /* OTHER FILE UTILITIES */
 
     /** Return the concatentation of FIRST and OTHERS into a File designator,
-     *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
+     *  analogous to the { java.nio.file.Paths.#get(String, String[])}
      *  method. */
     static File join(String first, String... others) {
         return Paths.get(first, others).toFile();
     }
 
     /** Return the concatentation of FIRST and OTHERS into a File designator,
-     *  analogous to the {@link java.nio.file.Paths.#get(String, String[])}
+     *  analogous to the { java.nio.file.Paths.#get(String, String[])}
      *  method. */
     static File join(File first, String... others) {
         return Paths.get(first.getPath(), others).toFile();
@@ -235,5 +241,10 @@ class Utils {
     static void message(String msg, Object... args) {
         System.out.printf(msg, args);
         System.out.println();
+    }
+
+    static void exitWithMessage(String msg, Object... args) {
+        message(msg,args);
+        exit(0);
     }
 }
