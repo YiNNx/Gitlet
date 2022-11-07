@@ -35,7 +35,7 @@ public class Repository {
     public static final File HEAD_FILE = join(GITLET_DIR, "HEAD");
 
     private static Commit loadHEAD() {
-        File headRefFile=join(GITLET_DIR,readContentsAsString(HEAD_FILE));
+        File headRefFile = join(GITLET_DIR, readContentsAsString(HEAD_FILE));
         return Commit.read(readContentsAsString(headRefFile));
     }
 
@@ -61,15 +61,18 @@ public class Repository {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
-        File file=join(CWD,filename);
-        if(!file.exists()){
+        File file = join(CWD, filename);
+        if (!file.exists()) {
             exitWithMessage("File does not exist.");
         }
 
-        Blob blob=new Blob(file);
-        blob.write();
-
-        Staging.addStage(filename,blob.hash());
+        Blob blob = new Blob(file);
+        if (!blob.hash().equals(loadHEAD().getTree().get(filename))) {
+            blob.write();
+            Staging.addStage(filename, blob.hash());
+        } else if (Staging.readAddition()!=null&&Staging.readAddition().containsKey(filename)) {
+            Staging.removeAddition(filename);
+        }
     }
 
     public void commit(String commitMsg) {
@@ -77,9 +80,10 @@ public class Repository {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
-        Commit HEAD=loadHEAD();
-        Commit newCommit=new Commit(commitMsg,HEAD,Staging.readAddition(),null);
+        Commit HEAD = loadHEAD();
+        Commit newCommit = new Commit(commitMsg, HEAD, Staging.readAddition(), null);
         newCommit.write();
+        STAGE_ADDING.delete();
 
         headBranchRefTo(newCommit);
     }
@@ -93,7 +97,7 @@ public class Repository {
     }
 
     static void headBranchRefTo(Commit commit) {
-        File headRefFile=join(GITLET_DIR,readContentsAsString(HEAD_FILE));
+        File headRefFile = join(GITLET_DIR, readContentsAsString(HEAD_FILE));
         writeContents(headRefFile, commit.hash());
     }
 

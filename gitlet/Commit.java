@@ -25,8 +25,8 @@ public class Commit implements Serializable, Dumpable {
     private String id;
 
     private Tree fileMapping;
-    private Commit parent;
-    private Commit secondParent;
+    private String parent;
+    private String secondParent;
 
     private Date date;
     /**
@@ -43,14 +43,14 @@ public class Commit implements Serializable, Dumpable {
     public Commit(String message, Commit parent, Staging additon, Staging removal) {
         this.message = message;
         this.date = new Date();
-        this.parent = parent;
+        this.parent = parent.hash();
         this.fileMapping = addStaged(parent.fileMapping, additon, removal);
     }
 
     private static Tree addStaged(Tree parent, Staging additon, Staging removal) {
         if (additon != null) {
-            for (Map.Entry<String, String> entry : additon.getEntries()) {
-                parent.tree.put(entry.getKey(), entry.getValue());
+            for (Map.Entry<String, String> entry : additon.entrySet()) {
+                parent.put(entry.getKey(), entry.getValue());
             }
         }
         // TODO: removal
@@ -61,11 +61,15 @@ public class Commit implements Serializable, Dumpable {
         return Utils.sha1(
                 TYPE,
                 this.fileMapping == null ? "" : this.fileMapping.toString(),
-                this.parent == null ? "" : this.parent.hash(),
-                this.secondParent == null ? "" : this.secondParent.hash(),
+                this.parent== null ? "":parent,
+                this.secondParent== null ? "":secondParent,
                 this.date.toString(),
                 this.message
         );
+    }
+
+    public Map<String, String> getTree(){
+        return fileMapping;
     }
 
     public static Commit read(String hash) {
@@ -79,20 +83,18 @@ public class Commit implements Serializable, Dumpable {
 
     @Override
     public void dump() {
-        System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s",hash().substring(0,12),this.parent == null ? "" : this.parent.hash().substring(0,12),date.toString(),message,this.fileMapping == null ? "" : this.fileMapping.toString());
+        System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s",hash().substring(0,12),this.parent==null?"":this.parent.substring(0,12),date.toString(),message,this.fileMapping == null ? "" : this.fileMapping.toString());
     }
 
-    private class Tree implements Serializable {
-        private Map<String, String> tree;
+    private class Tree extends     HashMap<String,String> implements Serializable {
 
         public Tree() {
-            tree = new HashMap<>();
         }
 
         @Override
         public String toString() {
             StringBuilder entries = new StringBuilder();
-            for (Map.Entry<String, String> entry : tree.entrySet()) {
+            for (Map.Entry<String, String> entry : entrySet()) {
                 entries.append(String.format("[%s:%s]", entry.getKey(), entry.getValue()));
             }
             return entries.toString();
