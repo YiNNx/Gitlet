@@ -123,6 +123,7 @@ class Utils {
                 throw
                     new IllegalArgumentException("cannot overwrite directory");
             }
+            file.getParentFile().mkdirs();
             BufferedOutputStream str =
                 new BufferedOutputStream(Files.newOutputStream(file.toPath()));
             for (Object obj : contents) {
@@ -160,7 +161,17 @@ class Utils {
 
     /** Write OBJ to FILE. */
     static void writeObject(File file, Serializable obj) {
+        file.getParentFile().mkdirs();
         writeContents(file, serialize(obj));
+    }
+
+    static void newFile(File file){
+        try {
+            file.getParentFile().mkdirs();
+            file.createNewFile();
+        }catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /* DIRECTORIES */

@@ -1,5 +1,6 @@
 package gitlet;
 
+import java.io.File;
 import java.io.Serializable;
 
 public class Blob implements Serializable,Dumpable {
@@ -10,6 +11,11 @@ public class Blob implements Serializable,Dumpable {
     private String fileName;
     private String fileContent;
 
+    public Blob(File file){
+        this.fileName=file.getName();
+        this.fileContent=Utils.readContentsAsString(file);
+    }
+
     public String hash(){
         return Utils.sha1(
                 TYPE,
@@ -18,8 +24,13 @@ public class Blob implements Serializable,Dumpable {
         );
     }
 
+    public void write(){
+        File f=Repository.getObjFile(this.hash());
+        Utils.writeObject(f, this);
+    }
+
     @Override
     public void dump() {
-
+        System.out.printf("BLOB %s [ %s ]\n%s",hash().substring(0,12),fileName,fileContent);
     }
 }
