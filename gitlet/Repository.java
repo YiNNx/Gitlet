@@ -1,9 +1,6 @@
 package gitlet;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.CookieHandler;
-import java.util.Map;
 
 import static gitlet.Utils.*;
 
@@ -67,12 +64,15 @@ public class Repository {
         }
 
         Blob blob = new Blob(file);
+
+        AddStage addStage=AddStage.readFromLocal();
         if (!blob.hash().equals(loadHEAD().getTree().get(filename))) {
             blob.write();
-            Staging.addStage(filename, blob.hash());
-        } else if (Staging.readAddition()!=null&&Staging.readAddition().containsKey(filename)) {
-            Staging.removeAddition(filename);
+            addStage.put(filename, blob.hash());
+        } else if ( AddStage.readFromLocal().containsKey(filename)) {
+            addStage.remove(filename);
         }
+        addStage.writeToLocal();
     }
 
     public void commit(String commitMsg) {
@@ -80,12 +80,46 @@ public class Repository {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
+
+        AddStage addStage=AddStage.readFromLocal();
+        RmStage rmStage=RmStage.readFromLocal();
+        if (addStage.isEmpty() &&  rmStage.isEmpty()) {
+            exitWithMessage("No changes added to the commit.");
+        }
+
         Commit HEAD = loadHEAD();
-        Commit newCommit = new Commit(commitMsg, HEAD, Staging.readAddition(), null);
+        Commit newCommit = new Commit(commitMsg, HEAD, addStage, rmStage);
         newCommit.write();
         STAGE_ADDING.delete();
 
+        addStage.clear();
+        addStage.writeToLocal();
+        rmStage.clear();
+        rmStage.writeToLocal();
+
         headBranchRefTo(newCommit);
+    }
+
+    public void rm(String rmFilename) {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        AddStage addStage=AddStage.readFromLocal();
+        RmStage rmStage=RmStage.readFromLocal();
+        File rmFile = join(CWD, rmFilename);
+        Commit HEAD = loadHEAD();
+
+        if (addStage != null && addStage.containsKey(rmFilename)) {
+            addStage.remove(rmFilename);
+            addStage.writeToLocal();
+        } else if (rmFile.exists() && HEAD.getTree().containsKey(rmFilename)) {
+            rmStage.put(rmFilename, HEAD.getTree().get(rmFilename));
+            Utils.restrictedDelete(rmFile);
+            rmStage.writeToLocal();
+        } else {
+            exitWithMessage("No reason to remove the file.");
+        }
     }
 
     static File getObjFile(String hash) {

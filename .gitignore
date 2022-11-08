@@ -1,4 +1,6 @@
 pom.xml
 gitlet-design.md
 .idea
-rebuild.sh
+**.sh
+.gitlet
+**.class

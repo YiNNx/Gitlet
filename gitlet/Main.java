@@ -28,8 +28,14 @@ public class Main {
                 repo.add(args[1]);
                 break;
             case "commit":
-                validateNumArgs(args, 2);
+                if (args.length != 2) {
+                    Utils.exitWithMessage("Please enter a commit message.");
+                }
                 repo.commit(args[1]);
+                break;
+            case "rm":
+                validateNumArgs(args, 2);
+                repo.rm(args[1]);
                 break;
             default:
                 Utils.exitWithMessage("No command with that name exists.");

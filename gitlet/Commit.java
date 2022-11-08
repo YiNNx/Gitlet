@@ -40,18 +40,16 @@ public class Commit implements Serializable, Dumpable {
         this.fileMapping = new Tree();
     }
 
-    public Commit(String message, Commit parent, Staging additon, Staging removal) {
+    public Commit(String message, Commit parent, StagingArea additon, StagingArea removal) {
         this.message = message;
         this.date = new Date();
         this.parent = parent.hash();
         this.fileMapping = addStaged(parent.fileMapping, additon, removal);
     }
 
-    private static Tree addStaged(Tree parent, Staging additon, Staging removal) {
+    private static Tree addStaged(Tree parent, StagingArea additon, StagingArea removal) {
         if (additon != null) {
-            for (Map.Entry<String, String> entry : additon.entrySet()) {
-                parent.put(entry.getKey(), entry.getValue());
-            }
+            parent.putAll(additon);
         }
         // TODO: removal
         return parent;
