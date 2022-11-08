@@ -122,6 +122,22 @@ public class Repository {
         }
     }
 
+    public void log() {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        Commit c = loadHEAD();
+        while (c!=null){
+            c.log();
+            c=Commit.read(c.getParent());
+        }
+    }
+
+    static File load(String hash) {
+        return join(OBJECTS_DIR, hash.substring(0, 2), hash.substring(2));
+    }
+
     static File getObjFile(String hash) {
         return join(OBJECTS_DIR, hash.substring(0, 2), hash.substring(2));
     }

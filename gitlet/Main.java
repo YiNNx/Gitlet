@@ -37,6 +37,10 @@ public class Main {
                 validateNumArgs(args, 2);
                 repo.rm(args[1]);
                 break;
+            case "log":
+                validateNumArgs(args, 1);
+                repo.log();
+                break;
             default:
                 Utils.exitWithMessage("No command with that name exists.");
         }

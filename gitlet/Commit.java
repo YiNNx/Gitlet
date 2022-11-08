@@ -6,6 +6,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Represents a gitlet commit object.
@@ -47,6 +48,10 @@ public class Commit implements Serializable, Dumpable {
         this.fileMapping = addStaged(parent.fileMapping, additon, removal);
     }
 
+    public String getParent() {
+        return parent;
+    }
+
     private static Tree addStaged(Tree parent, StagingArea additon, StagingArea removal) {
         if (additon != null) {
             parent.putAll(additon);
@@ -55,22 +60,27 @@ public class Commit implements Serializable, Dumpable {
         return parent;
     }
 
+    public void log() {
+        System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", this.hash(), date.toString(), message);
+    }
+
     public String hash() {
         return Utils.sha1(
                 TYPE,
                 this.fileMapping == null ? "" : this.fileMapping.toString(),
-                this.parent== null ? "":parent,
-                this.secondParent== null ? "":secondParent,
+                this.parent == null ? "" : parent,
+                this.secondParent == null ? "" : secondParent,
                 this.date.toString(),
                 this.message
         );
     }
 
-    public Map<String, String> getTree(){
+    public Map<String, String> getTree() {
         return fileMapping;
     }
 
     public static Commit read(String hash) {
+        if (hash == null || hash.equals("")) return null;
         return Utils.readObject(Repository.getObjFile(hash), Commit.class);
     }
 
@@ -81,10 +91,10 @@ public class Commit implements Serializable, Dumpable {
 
     @Override
     public void dump() {
-        System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s",hash().substring(0,12),this.parent==null?"":this.parent.substring(0,12),date.toString(),message,this.fileMapping == null ? "" : this.fileMapping.toString());
+        System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s", hash().substring(0, 12), this.parent == null ? "" : this.parent.substring(0, 12), date.toString(), message, this.fileMapping == null ? "" : this.fileMapping.toString());
     }
 
-    private class Tree extends     HashMap<String,String> implements Serializable {
+    private class Tree extends HashMap<String, String> implements Serializable {
 
         public Tree() {
         }
