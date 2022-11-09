@@ -7,7 +7,13 @@ import static gitlet.Utils.readObject;
 import static gitlet.Utils.writeObject;
 
 public interface StagingArea extends Map<String,String>,Serializable,Dumpable {
-    public void writeToLocal();
+    void writeToLocal();
+
+    default void printStagedFiles(){
+        for(String key:keySet()){
+            System.out.println(key);
+        }
+    }
 
     default void dump() {
         for (Map.Entry<String, String> entry : entrySet()) {

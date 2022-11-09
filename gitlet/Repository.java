@@ -1,6 +1,7 @@
 package gitlet;
 
 import java.io.File;
+import java.util.List;
 
 import static gitlet.Utils.*;
 
@@ -65,11 +66,11 @@ public class Repository {
 
         Blob blob = new Blob(file);
 
-        AddStage addStage=AddStage.readFromLocal();
+        AddStage addStage = AddStage.readFromLocal();
         if (!blob.hash().equals(loadHEAD().getTree().get(filename))) {
             blob.write();
             addStage.put(filename, blob.hash());
-        } else if ( AddStage.readFromLocal().containsKey(filename)) {
+        } else if (AddStage.readFromLocal().containsKey(filename)) {
             addStage.remove(filename);
         }
         addStage.writeToLocal();
@@ -81,9 +82,9 @@ public class Repository {
         }
 
 
-        AddStage addStage=AddStage.readFromLocal();
-        RmStage rmStage=RmStage.readFromLocal();
-        if (addStage.isEmpty() &&  rmStage.isEmpty()) {
+        AddStage addStage = AddStage.readFromLocal();
+        RmStage rmStage = RmStage.readFromLocal();
+        if (addStage.isEmpty() && rmStage.isEmpty()) {
             exitWithMessage("No changes added to the commit.");
         }
 
@@ -105,8 +106,8 @@ public class Repository {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
-        AddStage addStage=AddStage.readFromLocal();
-        RmStage rmStage=RmStage.readFromLocal();
+        AddStage addStage = AddStage.readFromLocal();
+        RmStage rmStage = RmStage.readFromLocal();
         File rmFile = join(CWD, rmFilename);
         Commit HEAD = loadHEAD();
 
@@ -128,14 +129,92 @@ public class Repository {
         }
 
         Commit c = loadHEAD();
-        while (c!=null){
+        while (c != null) {
             c.log();
-            c=Commit.read(c.getParent());
+            c = Commit.read(c.getParent());
         }
     }
 
-    static File load(String hash) {
-        return join(OBJECTS_DIR, hash.substring(0, 2), hash.substring(2));
+    public void globalLog() {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        String[] dirs = OBJECTS_DIR.list();
+        if (dirs == null) return;
+        for (String dir : dirs) {
+            String[] objs = join(OBJECTS_DIR, dir).list();
+            for (String obj : objs) {
+                File objFile = join(OBJECTS_DIR, dir, obj);
+                Commit commit = Utils.tryReadObject(objFile, Commit.class);
+                if (commit != null) commit.log();
+            }
+        }
+    }
+
+    public void find(String msg) {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        String[] dirs = OBJECTS_DIR.list();
+        if (dirs == null) return;
+        for (String dir : dirs) {
+            String[] objs = join(OBJECTS_DIR, dir).list();
+            for (String obj : objs) {
+                File objFile = join(OBJECTS_DIR, dir, obj);
+                Commit commit = Utils.tryReadObject(objFile, Commit.class);
+                if (commit != null && commit.getMsg().equals(msg)) System.out.println(commit.hash());
+            }
+        }
+    }
+
+    public void status() {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        printBranches();
+        printStaged();
+        printModifications();
+        printUntracked();
+    }
+
+    private void printBranches() {
+        List<String> branches = plainFilenamesIn(BRANCHES_DIR);
+
+        System.out.println("=== Branches ===");
+        for (String branch : branches) {
+            if (join(BRANCHES_DIR, branch).equals(join(GITLET_DIR, readContentsAsString(HEAD_FILE))))
+                System.out.printf("*%s\n", branch);
+            else System.out.printf("%s\n", branch);
+        }
+        System.out.println();
+    }
+
+    private void printStaged() {
+        AddStage addStage = AddStage.readFromLocal();
+        RmStage rmStage = RmStage.readFromLocal();
+
+        System.out.println("=== Staged Files ===");
+        addStage.printStagedFiles();
+        System.out.println();
+
+        System.out.println("=== Removed Files ===");
+        rmStage.printStagedFiles();
+        System.out.println();
+    }
+
+    private void printModifications() {
+        System.out.println("=== Modifications Not Staged For Commit ===");
+
+        System.out.println();
+    }
+
+    private void printUntracked() {
+        System.out.println("=== Untracked Files ===");
+
+        System.out.println();
     }
 
     static File getObjFile(String hash) {

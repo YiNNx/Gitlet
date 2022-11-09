@@ -23,8 +23,6 @@ public class Commit implements Serializable, Dumpable {
      */
     private static final String TYPE = "commit";
 
-    private String id;
-
     private Tree fileMapping;
     private String parent;
     private String secondParent;
@@ -50,6 +48,10 @@ public class Commit implements Serializable, Dumpable {
 
     public String getParent() {
         return parent;
+    }
+
+    public String getMsg() {
+        return message;
     }
 
     private static Tree addStaged(Tree parent, StagingArea additon, StagingArea removal) {
@@ -94,10 +96,7 @@ public class Commit implements Serializable, Dumpable {
         System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s", hash().substring(0, 12), this.parent == null ? "" : this.parent.substring(0, 12), date.toString(), message, this.fileMapping == null ? "" : this.fileMapping.toString());
     }
 
-    private class Tree extends HashMap<String, String> implements Serializable {
-
-        public Tree() {
-        }
+    private static class Tree extends HashMap<String, String> implements Serializable {
 
         @Override
         public String toString() {

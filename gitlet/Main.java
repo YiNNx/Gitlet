@@ -41,6 +41,18 @@ public class Main {
                 validateNumArgs(args, 1);
                 repo.log();
                 break;
+            case "global-log":
+                validateNumArgs(args, 1);
+                repo.globalLog();
+                break;
+            case "find":
+                validateNumArgs(args, 2);
+                repo.find(args[1]);
+                break;
+            case "status":
+                validateNumArgs(args, 1);
+                repo.status();
+                break;
             default:
                 Utils.exitWithMessage("No command with that name exists.");
         }
