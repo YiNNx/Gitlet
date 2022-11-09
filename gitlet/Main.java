@@ -53,6 +53,14 @@ public class Main {
                 validateNumArgs(args, 1);
                 repo.status();
                 break;
+            case "checkout":
+                validateNumArgs(args, 2);
+                repo.checkout(args[1]);
+                break;
+            case "branch":
+                validateNumArgs(args, 2);
+                repo.branch(args[1]);
+                break;
             default:
                 Utils.exitWithMessage("No command with that name exists.");
         }

@@ -14,7 +14,7 @@ public class Blob implements Serializable,Dumpable {
         this.fileContent=Utils.readContentsAsString(file);
     }
 
-    public String hash(){
+    public String id(){
         return Utils.sha1(
                 TYPE,
                 this.fileName,
@@ -23,12 +23,12 @@ public class Blob implements Serializable,Dumpable {
     }
 
     public void write(){
-        File f=Repository.getObjFile(this.hash());
+        File f=Repository.getObjFile(this.id());
         Utils.writeObject(f, this);
     }
 
     @Override
     public void dump() {
-        System.out.printf("BLOB %s [ %s ]\n%s",hash().substring(0,12),fileName,fileContent);
+        System.out.printf("BLOB %s [ %s ]\n%s", id().substring(0,12),fileName,fileContent);
     }
 }

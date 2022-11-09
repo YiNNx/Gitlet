@@ -6,7 +6,6 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Represents a gitlet commit object.
@@ -42,7 +41,7 @@ public class Commit implements Serializable, Dumpable {
     public Commit(String message, Commit parent, StagingArea additon, StagingArea removal) {
         this.message = message;
         this.date = new Date();
-        this.parent = parent.hash();
+        this.parent = parent.id();
         this.fileMapping = addStaged(parent.fileMapping, additon, removal);
     }
 
@@ -55,18 +54,19 @@ public class Commit implements Serializable, Dumpable {
     }
 
     private static Tree addStaged(Tree parent, StagingArea additon, StagingArea removal) {
-        if (additon != null) {
-            parent.putAll(additon);
+        Tree res= (Tree) parent.clone();
+        res.putAll(additon);
+        for(String key:removal.keySet()){
+            res.remove(key);
         }
-        // TODO: removal
-        return parent;
+        return res;
     }
 
     public void log() {
-        System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", this.hash(), date.toString(), message);
+        System.out.printf("===\ncommit %s\nDate: %s\n%s\n\n", this.id(), date.toString(), message);
     }
 
-    public String hash() {
+    public String id() {
         return Utils.sha1(
                 TYPE,
                 this.fileMapping == null ? "" : this.fileMapping.toString(),
@@ -81,19 +81,19 @@ public class Commit implements Serializable, Dumpable {
         return fileMapping;
     }
 
-    public static Commit read(String hash) {
-        if (hash == null || hash.equals("")) return null;
-        return Utils.readObject(Repository.getObjFile(hash), Commit.class);
+    public static Commit loadFromLocalById(String id) {
+        if (id == null || id.equals("")) return null;
+        return Utils.readObject(Repository.getObjFile(id), Commit.class);
     }
 
-    public void write() {
-        File f = Repository.getObjFile(this.hash());
+    public void writeToLocal() {
+        File f = Repository.getObjFile(this.id());
         Utils.writeObject(f, this);
     }
 
     @Override
     public void dump() {
-        System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s", hash().substring(0, 12), this.parent == null ? "" : this.parent.substring(0, 12), date.toString(), message, this.fileMapping == null ? "" : this.fileMapping.toString());
+        System.out.printf("COMMIT %s\nparent: %s\ntime: %s\nmsg: %s\n%s", id().substring(0, 12), this.parent == null ? "" : this.parent.substring(0, 12), date.toString(), message, this.fileMapping == null ? "" : this.fileMapping.toString());
     }
 
     private static class Tree extends HashMap<String, String> implements Serializable {

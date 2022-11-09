@@ -24,54 +24,44 @@ public class Repository {
      */
     public static final File GITLET_DIR = join(CWD, ".gitlet");
     public static final File OBJECTS_DIR = join(GITLET_DIR, "objects");
-    public static final File REFS_DIR = join(GITLET_DIR, "refs");
-    public static final File LOGS_DIR = join(GITLET_DIR, "logs");
     public static final File INDEX_DIR = join(GITLET_DIR, "index");
-    public static final File STAGE_ADDING = join(INDEX_DIR, "addition");
-    public static final File STAGE_REMOVAL = join(GITLET_DIR, "removal");
-    public static final File BRANCHES_DIR = join(REFS_DIR, "heads");
-    public static final File HEAD_FILE = join(GITLET_DIR, "HEAD");
-
-    private static Commit loadHEAD() {
-        File headRefFile = join(GITLET_DIR, readContentsAsString(HEAD_FILE));
-        return Commit.read(readContentsAsString(headRefFile));
-    }
+    public static final File BRANCHES_DIR = join(GITLET_DIR, "refs", "heads");
 
     public void init() {
         if (!GITLET_DIR.mkdir()) {
             exitWithMessage("A Gitlet version-control system already exists in the current directory.");
         }
+        String initialBranchName = "master";
+        String initialCommitMsg = "initial commit";
 
-        String defaultBranch = "master";
-        String initCommitMsg = "initial commit";
+        Commit initialCommit = new Commit(0, initialCommitMsg);
+        initialCommit.writeToLocal();
 
-        newBranchFile(defaultBranch);
-        headFileRefTo(defaultBranch);
+        Branch newBranch=new Branch(initialBranchName,initialCommit.id());
+        newBranch.createLocally();
 
-        Commit initialCommit = new Commit(0, initCommitMsg);
-        initialCommit.write();
-
-        branchRefTo(defaultBranch, initialCommit);
+        Head.create();
+        Head.changeRefToBranch(initialBranchName);
     }
 
-    public void add(String filename) {
+    public void add(String filenameAdd) {
         if (!GITLET_DIR.exists()) {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
-        File file = join(CWD, filename);
-        if (!file.exists()) {
+        File fileAdd = join(CWD, filenameAdd);
+        if (!fileAdd.exists()) {
             exitWithMessage("File does not exist.");
         }
 
-        Blob blob = new Blob(file);
+        Blob blob = new Blob(fileAdd);
 
         AddStage addStage = AddStage.readFromLocal();
-        if (!blob.hash().equals(loadHEAD().getTree().get(filename))) {
+        if (!blob.id().equals(Head.loadRefCommit().getTree().get(filenameAdd))) {
             blob.write();
-            addStage.put(filename, blob.hash());
-        } else if (AddStage.readFromLocal().containsKey(filename)) {
-            addStage.remove(filename);
+            addStage.put(filenameAdd, blob.id());
+        } else if (AddStage.readFromLocal().containsKey(filenameAdd)) {
+            addStage.remove(filenameAdd);
         }
         addStage.writeToLocal();
     }
@@ -81,24 +71,22 @@ public class Repository {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
-
         AddStage addStage = AddStage.readFromLocal();
         RmStage rmStage = RmStage.readFromLocal();
         if (addStage.isEmpty() && rmStage.isEmpty()) {
             exitWithMessage("No changes added to the commit.");
         }
 
-        Commit HEAD = loadHEAD();
-        Commit newCommit = new Commit(commitMsg, HEAD, addStage, rmStage);
-        newCommit.write();
-        STAGE_ADDING.delete();
+        Commit HEADRefCommit = Head.loadRefCommit();
+        Commit newCommit = new Commit(commitMsg, HEADRefCommit, addStage, rmStage);
+        newCommit.writeToLocal();
 
         addStage.clear();
-        addStage.writeToLocal();
         rmStage.clear();
+        addStage.writeToLocal();
         rmStage.writeToLocal();
 
-        headBranchRefTo(newCommit);
+        Head.loadRefBranch().updateRefCommitId(newCommit.id());
     }
 
     public void rm(String rmFilename) {
@@ -109,7 +97,7 @@ public class Repository {
         AddStage addStage = AddStage.readFromLocal();
         RmStage rmStage = RmStage.readFromLocal();
         File rmFile = join(CWD, rmFilename);
-        Commit HEAD = loadHEAD();
+        Commit HEAD = Head.loadRefCommit();
 
         if (addStage != null && addStage.containsKey(rmFilename)) {
             addStage.remove(rmFilename);
@@ -128,10 +116,10 @@ public class Repository {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
 
-        Commit c = loadHEAD();
+        Commit c = Head.loadRefCommit();
         while (c != null) {
             c.log();
-            c = Commit.read(c.getParent());
+            c = Commit.loadFromLocalById(c.getParent());
         }
     }
 
@@ -164,7 +152,7 @@ public class Repository {
             for (String obj : objs) {
                 File objFile = join(OBJECTS_DIR, dir, obj);
                 Commit commit = Utils.tryReadObject(objFile, Commit.class);
-                if (commit != null && commit.getMsg().equals(msg)) System.out.println(commit.hash());
+                if (commit != null && commit.getMsg().equals(msg)) System.out.println(commit.id());
             }
         }
     }
@@ -180,12 +168,40 @@ public class Repository {
         printUntracked();
     }
 
+
+    public void checkout(String branchName) {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+        if(!Branch.getFile(branchName).exists())
+            exitWithMessage("No such branch exists.");
+
+        Branch b=Branch.loadFromLocalByName(branchName);
+
+        if(Head.loadRefBranch().equals(b))
+            exitWithMessage("No need to checkout the current branch.");
+
+        Head.changeRefToBranch(b.name);
+    }
+
+    public void branch(String branchName) {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        Commit HEAD = Head.loadRefCommit();
+
+        Branch newBranch=new Branch(branchName,HEAD.id());
+        if(newBranch.exist()) exitWithMessage("A branch with that name already exists.");
+        newBranch.createLocally();
+    }
+
     private void printBranches() {
         List<String> branches = plainFilenamesIn(BRANCHES_DIR);
 
         System.out.println("=== Branches ===");
         for (String branch : branches) {
-            if (join(BRANCHES_DIR, branch).equals(join(GITLET_DIR, readContentsAsString(HEAD_FILE))))
+            if (join(BRANCHES_DIR, branch).equals(join(GITLET_DIR, readContentsAsString(Head.HEAD_FILE))))
                 System.out.printf("*%s\n", branch);
             else System.out.printf("%s\n", branch);
         }
@@ -220,27 +236,10 @@ public class Repository {
     static File getObjFile(String hash) {
         return join(OBJECTS_DIR, hash.substring(0, 2), hash.substring(2));
     }
+//
+//    static void branchRefTo(String branch, Commit commit) {
+//        writeContents(Branch.getFile(branch), commit.id());
+//    }
+//
 
-    static void branchRefTo(String branch, Commit commit) {
-        writeContents(getBranchFile(branch), commit.hash());
-    }
-
-    static void headBranchRefTo(Commit commit) {
-        File headRefFile = join(GITLET_DIR, readContentsAsString(HEAD_FILE));
-        writeContents(headRefFile, commit.hash());
-    }
-
-    // make HEAD file reference to branch's ref
-    static void headFileRefTo(String branch) {
-        writeContents(HEAD_FILE, GITLET_DIR.toURI().relativize(getBranchFile(branch).toURI()).toString());
-    }
-
-    // creates empty refs/heads/<branch> file
-    static void newBranchFile(String branch) {
-        newFile(getBranchFile(branch));
-    }
-
-    static File getBranchFile(String branchName) {
-        return join(BRANCHES_DIR, branchName);
-    }
 }

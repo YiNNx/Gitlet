@@ -2,5 +2,6 @@ pom.xml
 gitlet-design.md
 .idea
 **.sh
+**.txt
 .gitlet
 **.class
