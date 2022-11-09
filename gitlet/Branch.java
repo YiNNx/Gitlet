@@ -31,6 +31,11 @@ public class Branch {
         writeContents(branchFile, refCommitId);
     }
 
+
+    public void deleteLocally() {
+        branchFile.delete();
+    }
+
     public void updateRefCommitId(String commitId) {
         refCommitId = commitId;
         writeContents(branchFile, commitId);

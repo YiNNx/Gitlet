@@ -26,8 +26,7 @@ public class Head {
     }
 
     public static Branch loadRefBranch() {
-        String headContent = readContentsAsString(HEAD_FILE);
-        String branchName = join(Repository.GITLET_DIR,headContent).getName();
+        String branchName = getRefBranchName();
         return Branch.loadFromLocalByName(branchName);
     }
 }

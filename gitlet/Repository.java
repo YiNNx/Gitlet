@@ -37,7 +37,7 @@ public class Repository {
         Commit initialCommit = new Commit(0, initialCommitMsg);
         initialCommit.writeToLocal();
 
-        Branch newBranch=new Branch(initialBranchName,initialCommit.id());
+        Branch newBranch = new Branch(initialBranchName, initialCommit.id());
         newBranch.createLocally();
 
         Head.create();
@@ -173,12 +173,12 @@ public class Repository {
         if (!GITLET_DIR.exists()) {
             exitWithMessage("Not in an initialized Gitlet directory.");
         }
-        if(!Branch.getFile(branchName).exists())
+        if (!Branch.getFile(branchName).exists())
             exitWithMessage("No such branch exists.");
 
-        Branch b=Branch.loadFromLocalByName(branchName);
+        Branch b = Branch.loadFromLocalByName(branchName);
 
-        if(Head.loadRefBranch().equals(b))
+        if (Head.loadRefBranch().equals(b))
             exitWithMessage("No need to checkout the current branch.");
 
         Head.changeRefToBranch(b.name);
@@ -191,9 +191,25 @@ public class Repository {
 
         Commit HEAD = Head.loadRefCommit();
 
-        Branch newBranch=new Branch(branchName,HEAD.id());
-        if(newBranch.exist()) exitWithMessage("A branch with that name already exists.");
+        Branch newBranch = new Branch(branchName, HEAD.id());
+        if (newBranch.exist()) exitWithMessage("A branch with that name already exists.");
         newBranch.createLocally();
+    }
+
+    public void rmBranch(String branchName) {
+        if (!GITLET_DIR.exists()) {
+            exitWithMessage("Not in an initialized Gitlet directory.");
+        }
+
+        if (!Branch.getFile(branchName).exists())
+            exitWithMessage("A branch with that name does not exist.");
+
+        Branch branchRm = Branch.loadFromLocalByName(branchName);
+
+        if (branchRm.name.equals(Head.getRefBranchName()))
+            exitWithMessage("Cannot remove the current branch.");
+
+        branchRm.deleteLocally();
     }
 
     private void printBranches() {

@@ -61,6 +61,10 @@ public class Main {
                 validateNumArgs(args, 2);
                 repo.branch(args[1]);
                 break;
+            case "rm-branch":
+                validateNumArgs(args, 2);
+                repo.rmBranch(args[1]);
+                break;
             default:
                 Utils.exitWithMessage("No command with that name exists.");
         }
