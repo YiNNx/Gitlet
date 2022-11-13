@@ -31,7 +31,6 @@ public class Branch {
         writeContents(branchFile, refCommitId);
     }
 
-
     public void deleteLocally() {
         branchFile.delete();
     }

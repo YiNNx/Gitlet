@@ -54,8 +54,7 @@ public class Main {
                 repo.status();
                 break;
             case "checkout":
-                validateNumArgs(args, 2);
-                repo.checkout(args[1]);
+                repo.checkout(args);
                 break;
             case "branch":
                 validateNumArgs(args, 2);

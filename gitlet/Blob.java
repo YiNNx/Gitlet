@@ -22,9 +22,19 @@ public class Blob implements Serializable,Dumpable {
         );
     }
 
-    public void write(){
+    public void writeToRepo(){
         File f=Repository.getObjFile(this.id());
         Utils.writeObject(f, this);
+    }
+
+    public void overwriteWorkingDir(){
+        File target=Utils.join(Repository.CWD,this.fileName);
+        Utils.writeContents(target,this.fileContent);
+    }
+
+    public static Blob loadFromLocalById(String id) {
+        if (id == null || id.equals("")) return null;
+        return Utils.readObject(Repository.getObjFile(id), Blob.class);
     }
 
     @Override

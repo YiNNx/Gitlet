@@ -1,7 +1,10 @@
 package gitlet;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static gitlet.Utils.*;
 
@@ -58,7 +61,7 @@ public class Repository {
 
         AddStage addStage = AddStage.readFromLocal();
         if (!blob.id().equals(Head.loadRefCommit().getTree().get(filenameAdd))) {
-            blob.write();
+            blob.writeToRepo();
             addStage.put(filenameAdd, blob.id());
         } else if (AddStage.readFromLocal().containsKey(filenameAdd)) {
             addStage.remove(filenameAdd);
@@ -168,20 +171,55 @@ public class Repository {
         printUntracked();
     }
 
+    public void checkout(String[] args) {
+        int bar = Arrays.asList(args).indexOf("--");
+        if (bar == -1) { // checkout [branch name]
+            String branchName = args[1];
+            if (!GITLET_DIR.exists()) {
+                exitWithMessage("Not in an initialized Gitlet directory.");
+            }
+            if (!Branch.getFile(branchName).exists())
+                exitWithMessage("No such branch exists.");
 
-    public void checkout(String branchName) {
-        if (!GITLET_DIR.exists()) {
-            exitWithMessage("Not in an initialized Gitlet directory.");
+            Branch b = Branch.loadFromLocalByName(branchName);
+
+            if (Head.loadRefBranch().equals(b))
+                exitWithMessage("No need to checkout the current branch.");
+
+            List<String> allFiles = Utils.plainFilenamesIn(CWD);
+            if (allFiles != null) {
+                for (String file : allFiles) {
+                    AddStage addStage = AddStage.readFromLocal();
+                    if (!Head.loadRefCommit().getTree().containsKey(file)&& !addStage.containsKey(file) && b.getRefCommit().getTree().containsKey(file))
+                        exitWithMessage("There is an untracked file in the way; delete it, or add and commit it first.");
+                }
+            }
+
+            for (Map.Entry<String, String> blob : Head.loadRefCommit().getTree().entrySet()) {
+                String filename = blob.getKey();
+                Utils.join(CWD, filename).delete();
+            }
+
+            for (Map.Entry<String, String> blob : b.getRefCommit().getTree().entrySet()) {
+                Blob.loadFromLocalById(blob.getValue()).overwriteWorkingDir();
+            }
+
+            clearStage();
+            Head.changeRefToBranch(b.name);
+        } else {
+            String filename = args[bar + 1];
+            Commit checkoutCommit;
+
+            if (args.length == 4) {
+                if (!getObjFile(args[1]).exists()) exitWithMessage("No commit with that id exists.");
+                checkoutCommit = Commit.loadFromLocalById(args[1]);
+            } else {
+                checkoutCommit = Head.loadRefCommit();
+            }
+            String checkoutBlobId = checkoutCommit.getTree().get(filename);
+            if (checkoutBlobId == null) exitWithMessage("File does not exist in that commit.");
+            Blob.loadFromLocalById(checkoutBlobId).overwriteWorkingDir();
         }
-        if (!Branch.getFile(branchName).exists())
-            exitWithMessage("No such branch exists.");
-
-        Branch b = Branch.loadFromLocalByName(branchName);
-
-        if (Head.loadRefBranch().equals(b))
-            exitWithMessage("No need to checkout the current branch.");
-
-        Head.changeRefToBranch(b.name);
     }
 
     public void branch(String branchName) {
@@ -239,6 +277,14 @@ public class Repository {
 
     private void printModifications() {
         System.out.println("=== Modifications Not Staged For Commit ===");
+        List<String> allFiles = Utils.plainFilenamesIn(CWD);
+        if (allFiles != null) {
+            for (String file : allFiles) {
+                String fileId = new Blob(join(CWD, file)).id();
+                if (Head.loadRefCommit().getTree().containsKey(file) && !getObjFile(fileId).exists())
+                    System.out.println(file);
+            }
+        }
 
         System.out.println();
     }
@@ -246,11 +292,30 @@ public class Repository {
     private void printUntracked() {
         System.out.println("=== Untracked Files ===");
 
+        List<String> allFiles = Utils.plainFilenamesIn(CWD);
+        AddStage addStage = AddStage.readFromLocal();
+        RmStage rmStage = RmStage.readFromLocal();
+        if (allFiles != null) {
+            for (String file : allFiles) {
+                if ((!Head.loadRefCommit().getTree().containsKey(file) && !addStage.containsKey(file)) || rmStage.containsKey(file))
+                    System.out.println(file);
+            }
+        }
         System.out.println();
     }
 
     static File getObjFile(String hash) {
         return join(OBJECTS_DIR, hash.substring(0, 2), hash.substring(2));
+    }
+
+    static void clearStage() {
+        AddStage addStage = AddStage.readFromLocal();
+        RmStage rmStage = RmStage.readFromLocal();
+        addStage.clear();
+        rmStage.clear();
+        addStage.writeToLocal();
+        rmStage.writeToLocal();
+
     }
 //
 //    static void branchRefTo(String branch, Commit commit) {
