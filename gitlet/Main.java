@@ -28,7 +28,7 @@ public class Main {
                 repo.add(args[1]);
                 break;
             case "commit":
-                if (args.length != 2) {
+                if (args.length != 2 || args[1].equals("")) {
                     Utils.exitWithMessage("Please enter a commit message.");
                 }
                 repo.commit(args[1]);
@@ -63,6 +63,14 @@ public class Main {
             case "rm-branch":
                 validateNumArgs(args, 2);
                 repo.rmBranch(args[1]);
+                break;
+            case "reset":
+                validateNumArgs(args, 2);
+                repo.reset(args[1]);
+                break;
+            case "merge":
+                validateNumArgs(args, 2);
+                repo.merge(args[1]);
                 break;
             default:
                 Utils.exitWithMessage("No command with that name exists.");

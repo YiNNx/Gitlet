@@ -50,7 +50,7 @@ public class Branch {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj.getClass() != this.getClass()) return false;
+        if (obj.getClass() != this.getClass()) {return false;}
         return this.name.equals(((Branch) obj).name) &&
                 this.refCommitId.equals(((Branch) obj).refCommitId) &&
                 this.branchFile.equals(((Branch) obj).branchFile);
