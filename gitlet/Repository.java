@@ -333,7 +333,7 @@ public class Repository {
         }
 
         if(mergeBranch.getRefCommit().id().equals(Head.loadRefCommit().id())) exit(0);
-        
+
     }
 
     private void printBranches() {
