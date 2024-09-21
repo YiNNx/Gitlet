@@ -10,10 +10,6 @@
   - **a parent reference** ( and a second parent reference
 
 
-![1](https://cdn.just-plain.fun/img/1.png)
-
-
-
 ![img](https://sp21.datastructur.es/materials/proj/proj2/image/commits-and-blobs.png)
 
 
